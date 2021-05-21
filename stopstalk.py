@@ -1,8 +1,10 @@
 import requests;
 from bs4 import BeautifulSoup
 from datetime import date,time,datetime
+import csv
+columns=["name","website","problem","language","result","score","sub_time"]
 
-
+submissions=[]
 def get_website(url):
     if url.find("codechef") != -1:
         return "codechef"
@@ -22,7 +24,7 @@ def stalk_user(handle):
     today=date.today()
 
     hit_url=f"https://www.stopstalk.com/user/submissions/{handle}";
-    print(hit_url)
+    print(f"stalking {handle}")
     req=requests.get(hit_url)
     soup=BeautifulSoup(req.text,'html.parser')
     _table=soup.find('table',{"class":"submissions-table"})
@@ -35,16 +37,18 @@ def stalk_user(handle):
         allHeadings=row.findAll("td")
         name=allHeadings[0].div.a.text
         website=allHeadings[1].a['href']
+        website=get_website(website)
         problem=allHeadings[3].div.a['href']
         problem=f"https://www.stopstalk.com{problem}"
         language=allHeadings[4].text
         result=allHeadings[5].img['title']
         score=allHeadings[6].text
         sub_time=row.find("td",{"class":"stopstalk-timestamp"})
-        sub_object={name,website,problem,language,result,score,sub_time}
         sub_date=date.fromisoformat(sub_time.text.split(" ")[0])
+        sub_object={"name":name,"website":website,"problem":problem,"language":language,"result":result,"score":score,"sub_time":sub_date}
         if today<=sub_date:
             print(sub_object)
+            submissions.append(sub_object)
 
 
 if __name__ == '__main__':
@@ -67,6 +71,16 @@ if __name__ == '__main__':
     "sumeetkvd",
     "itsutkarsh2711",
     "vansri24",
-    "rey_yuvraj"]
+    "rey_yuvraj","lakshaykumar0510"]
     for member in members:
         stalk_user(member)
+    
+    submissions_file_name="test.csv"
+    try:
+        with open(submissions_file_name,"w") as csvfile:
+            writer=csv.DictWriter(csvfile,fieldnames=columns)
+            writer.writeheader()
+            for submission in submissions:
+                writer.writerow(submission)
+    except IOError:
+        print("I/O error")
